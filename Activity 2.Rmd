@@ -1,0 +1,35 @@
+---
+title: "Activity 2"
+output:
+  html_notebook: default
+  html_document: default
+  pdf_document: default
+---
+
+
+Load the dataset **titanic** 
+
+```{r}
+# install.packages("titanic")
+# data("titanic_train")
+# df <- titanic_train
+# head(df)
+# str(df)
+
+```
+- Change variables that are factors into factors. If they are ordinal, use *ordered* to create ordered factors. Remember to use lapply.
+
+- It represents in a qplot the age against the fare, and in a second qplot the same but with the key of the class in which they were traveling. Represent it in turn by factoring it (i.e. applying faceting) by *Sex* and *Embarked*
+
+- Paint a boxplot of age grouped by *Sex*
+
+- Draw a barplot representing survival in each *Pclass* by coloring the bars accordingly.
+
+- Paint survival based on the *Sex* category, what do you see?
+
+- Paint survival based on the *Pclass* category, what do you appreciate?
+
+- Create a histogram of *Age*, what do you see?.Categorizes the age variable and put a new name *Age_c". 
+Do you find any outlier in Age? Treat it if you see it necessary. 
+
+- Create a pool of the data using `dplyr` of *Sex* and *Pclass*. Make summaries of mean, count and median. What could you say about the results? Is there enough sample to draw conclusions in all the categories created by combining age and class?
