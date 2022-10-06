@@ -1,0 +1,790 @@
+--
+title: "Livecoding Chapter 2"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
+---
+
+
+# Graphics in `ggplot`
+
+## Scatterplots
+
+We plot a scatter plot of the variables braking distance and speed of cars
+
+```{r}
+
+data(cars)
+
+help(cars)
+head(cars)
+plot(cars)
+
+```
+
+Conclusion: higher speed implies greater braking distance in general.
+
+
+We load the ggplot library to see how it improves the basic plots that R has built in.
+
+```{r}
+
+# install.packages("ggplot2")
+library(ggplot2)
+
+```
+
+On the one hand, it shows how it allows us to add regression lines (i.e. fit linear models) with confidence intervals that help us to show the relationships that a scatter plot shows between two variables.
+
+```{r}
+
+ggplot(cars, aes(x=speed, y=dist)) + 
+    geom_point(shape=1)      # hollow circles
+
+ggplot(cars, aes(x=speed, y=dist)) +
+    geom_point(shape=1) +    
+    geom_smooth(method=lm)   # add regression line with 95% confidence interval // can also be used  stat_smooth(method = lm) instead of geom_smooth(method=lm)
+
+ggplot(cars, aes(x=speed, y=dist)) +
+    geom_point(shape=1) +    
+    stat_smooth(method=lm, level = 0.99)   # add regression line with 99% confidence interval
+
+ggplot(cars, aes(x=speed, y=dist)) +
+    geom_point(shape=1) +    
+    geom_smooth(method=lm, se=FALSE)  # add regression line without confidence interval
+
+ggplot(cars, aes(x=speed, y=dist)) +
+    geom_point(shape=1) +   
+    geom_smooth()           # adds a regularized curve (or smooth linear regression) over the data and its confidence region // can also be used stat_smooth(method = loess) instead of geom_smooth()
+
+```
+
+On the other hand, different methods are shown to detect the density of observations in the scatterplot.
+
+```{r}
+
+#Load data
+
+data(diamonds)
+
+?diamonds
+
+head(diamonds)
+str(diamonds)
+
+ggplot(diamonds, aes(x = carat, y = price)) + geom_point()
+
+#a specific shape can be used for the points
+ggplot(diamonds, aes(x = carat, y = price)) + geom_point(shape = 25, size = 1)
+
+#can be painted depending on a factor
+ggplot(diamonds, aes(x = carat, y = price, colour = cut)) + geom_point(size = 1.5)
+
+easy <- ggplot(diamonds, aes(x = carat, y = price))
+easy + geom_point(alpha = 0.1)
+easy + geom_point(alpha = 0.05)
+
+# you can do a scatterplot with bins in colored rectangles based on a variable (which is actually the density of observations in that bin)
+# it is an alternative to what was previously achieved with the alpha parameter
+
+bin <- ggplot(diamonds, aes(x = carat, y = price))
+bin + stat_bin2d()
+
+```
+
+Until now, we had seen how to include linear or non-linear regressions and visualize the density of the observations within the scatterplot.
+
+This graph shows a linear regression between both variables as well as the density of the observations in the scatterplot
+
+```{r}
+
+bin + stat_binhex() + scale_fill_gradient(low = "lightblue", high = "red", 
+                                          breaks = c(0,500, 1000, 2000, 4000, 6000, 8000), limits = c(0, 8000)) + stat_smooth(method = lm) + ylim(0, 20000)
+```
+
+
+## Histograms
+
+
+We load the dataset of vehicles and consumption. We paint a histogama of their consumption on the highway.
+
+```{r}
+
+data(mpg)
+help(mpg)
+head(mpg)
+hist(mpg$hwy)
+
+```
+
+Ggplot representations of histograms with density curve options and setting of the number of bars in which the representation is divided.
+
+```{r}
+
+ggplot(mpg, aes(x=hwy)) + geom_histogram(binwidth=3) # sets the width of each partition
+
+ggplot(mpg, aes(x=hwy)) + geom_histogram(bins=30) # set the number of partitions
+
+ggplot(mpg, aes(x=hwy)) +
+    geom_histogram(binwidth=.5, colour="black", fill="white") # color opcions
+
+# draw a density curve
+ggplot(mpg, aes(x=hwy)) + geom_density(fill="red")
+
+# histogram with density curve
+ggplot(mpg, aes(x=hwy)) + 
+    geom_histogram(aes(y=..density..),      
+                   binwidth=2,
+                   colour="black", fill="blue") +
+    geom_density(alpha=0.11, fill="red")  #density curve fill in soft red
+
+```
+
+
+Histograms can also be represented in which the variable is divided with respect to several categories.
+For this we are going to select two manufacturers, audi and volkswagen
+
+```{r}
+
+mpg_subset <- mpg[mpg$manufacturer=="audi" | mpg$manufacturer=="volkswagen" , ]
+
+str(mpg_subset)
+
+#table(mpg_subset$manufacturer)
+
+```
+
+```{r}
+
+# overlaid histograms
+ggplot(mpg_subset, aes(x=hwy, fill=manufacturer)) +
+    geom_histogram(binwidth=2, alpha=.5, position="identity")
+
+# interleaved histograms
+ggplot(mpg_subset, aes(x=hwy, fill=manufacturer)) +
+    geom_histogram(binwidth=2, position="dodge")
+
+# density curves
+ggplot(mpg_subset, aes(x=hwy, fill=manufacturer)) + geom_density()
+
+# density curves with transparent fill
+ggplot(mpg_subset, aes(x=hwy, fill=manufacturer)) + geom_density(alpha=.3)
+```
+More histograms and options
+
+```{r}
+
+#more sophisticated histograms
+
+set.seed(6298) # we set the seed so that the subsequent random sample is always the same
+diamonds_small <- diamonds[sample(nrow(diamonds), 1000), ] 
+ggplot(diamonds_small, aes(x = price)) + geom_histogram() 
+ggplot(diamonds_small, aes(x = price)) + geom_histogram(binwidth = 1000) 
+
+#frequency polygons with colors as a function of a factor
+ggplot(diamonds_small, aes(price, ..density.., colour = cut)) + geom_freqpoly(binwidth = 1000)
+
+ggplot(diamonds_small, aes(price, colour = cut)) + geom_freqpoly(binwidth = 1000)
+
+#more options, overlapping histograms with different colors depending on a factor
+
+hist_cut <- ggplot(diamonds_small, aes(x = price, fill = cut))
+hist_cut + geom_histogram(binwidth = 1000)
+
+#density graphs with different factors marking colors
+ggplot(diamonds_small, aes(price, fill = cut)) + geom_density(alpha = 0.2)
+
+```
+
+## Bar charts
+
+We load a dataset of tips to observe their distribution
+
+```{r}
+# install.packages("reshape2")
+library(reshape2)
+data(tips)
+help(tips)
+head(tips)
+
+```
+
+```{r}
+# basic bar chart of total bill versus time of day
+# more is consumed at dinner than at lunch
+
+ggplot(data=tips, aes(x=time, y=total_bill)) +
+    geom_bar(stat="identity")
+
+# draw the previous bar graph according to the smoker category
+ggplot(data=tips, aes(x=time, y=total_bill, fill=smoker)) +
+    geom_bar(stat="identity")
+
+```
+
+It can be seen that Sunday is when each table pays more on average.
+
+```{r}
+
+#customer account per day / number of accounts per day of the week. There are more accounts generated on Saturdays
+ggplot(data=tips, aes(x=day)) +
+    geom_bar(stat="count") 
+
+#average invoice count per day
+ggplot(data=tips, aes(x=day, y=total_bill)) +
+    geom_bar(stat = "summary", fun.y = "mean") 
+
+#account of average invoices per day
+ggplot(data=tips, aes(x=day, y=total_bill)) +
+    geom_bar(stat = "summary") 
+```
+
+## Factor plots with error bars
+
+They are graphs similar to bar graphs but with lines connecting points.
+a dataset of tooth growth in guinea pigs.
+
+```{r}
+data(ToothGrowth)
+help("ToothGrowth")
+head(ToothGrowth)
+tg <- ToothGrowth
+```
+
+We summarize the variables that allow us to make representations with confidence margins:
+
+```{r}
+
+ install.packages("Rmisc")
+
+table(tg$dose) # 3 categorías 0.5 / 1 /2
+table(tg$supp) # 2 categorías OJ/VC
+
+
+library(Rmisc)
+
+#?summarySE
+#measurevar = name of the numeric variable that we are going to sum up
+
+tgc <- summarySE(tg, measurevar="len", groupvars=c("supp","dose"))
+tgc
+#sd=standard deviation, Se=standard error of the mean and 95% CI
+
+
+```
+
+We make factor graphs. We can observe the difference of applying one supplement or another to the pig. The vertical bars are 95% confidence intervals of the tooth length values according to the amount of dose provided in each supplement.
+
+```{r}
+
+# factor plot with error bars
+ggplot(tgc, aes(x=dose, y=len, colour=supp)) + 
+    geom_errorbar(aes(ymin=len-se, ymax=len+se), width=.1) +
+    geom_line() +
+    geom_point()
+
+```
+
+## Charts *boxplot*
+
+Box or whisker plots allow visualizing where 50% of the data of a variable is located, indicating the central range of values that is delimited by the rectangle or box.
+In addition, they generate a reasonable range where the readings of the same can be expected to be found and mark as outliers those that fall outside that range.
+
+
+```{r}
+
+library(ggplot2)
+
+#tip depending on the day
+#on Sunday they pay more on average but on Saturday there are more optimistic people with high tips (outliers)
+
+ggplot(tips, aes(day, tip)) +  geom_boxplot() + coord_flip()
+
+
+# diamond price based on quality
+# we can see how there are many observations that escape where the majority are concentrated (many outliers)
+
+p <- ggplot(diamonds, aes(cut, price))
+p + geom_boxplot()
+
+ggplot(diamonds, aes(cut, price))+ geom_boxplot()+ coord_flip()
+
+```
+
+---
+title: "UD2 N02"
+output:
+  html_notebook: default
+  html_document: default
+  pdf_document: default
+---
+
+Representation extension with GGplot and faceting
+
+The following image shows a compilation of the main functions implemented in GGplot.
+
+<img src='UD2 N02 referencias ggplot.png'>
+
+
+
+```{r}
+
+libs <- c("ggplot2", "plyr")
+lapply(libs, require, character.only = T)
+
+```
+
+# Faceting
+
+Faceting consists of grouping the dataframe according to factors and subdividing the study graph based on these groupings with the aim of detecting patterns that depend on categorical variables.
+
+# Example of faceting I: Use of gasoline in cars
+
+We load the dataset
+
+```{r}
+
+data(mpg)
+head(mpg)
+str(mpg)
+?mpg
+
+```
+
+We create categorical graphs with colors based on factors
+
+```{r}
+
+# depending on the manufacturer
+qplot(data = mpg, x = displ, y = hwy, color = manufacturer)
+
+```
+```{r}
+
+# depending on vehicle class
+qplot(data = mpg, x = displ, y = hwy, color = class)
+
+```
+
+We now apply faceting based on what class of vehicle it is.
+
+Thanks to faceting we managed to show that the relationship between consumption and cylinder capacity depends largely on the type of vehicle it is.
+For example, pickups have a higher consumption than mid-size cars at the same displacement level, since while, with a displacement of 2, they barely reach 20 miles per gallon, mid-size cars are around 28 miles per gallon for a displacement of 2.
+
+```{r}
+qplot(data = mpg, x = displ, y = hwy, color = manufacturer, facets = ~class)
+```
+Faceting can also be useful for finding linear relationships.
+
+In this case, if the data is not disaggregated by type of vehicle, a linear relationship can be applied, but many observations are far from said relationship.
+
+```{r}
+myGG <- ggplot(mpg, aes(x = displ, y = hwy))
+myGG + geom_point(aes(color = manufacturer)) + stat_smooth(method = lm, se = FALSE)
+```
+We paint with standard variation:
+
+```{r}
+myGG <- ggplot(mpg, aes(x = displ, y = hwy))
+myGG + geom_point(aes(color = manufacturer)) + stat_smooth(method = lm)
+```
+Thanks to faceting we see that the underlying reality was that the linear relationship depended on the vehicle class.
+We can see that in each faceting subplot the observations now barely deviate from the calculated linear relationship.
+
+```{r}
+myGG + geom_point(aes(color = manufacturer)) + stat_smooth(method = lm, se = FALSE) + 
+    facet_grid(class ~ .)
+```
+
+## FIRST EXPLORATORY ANALYSIS OF A DB
+
+# Exploratory analysis of video game sales dataset
+
+We load a video game sales dataset to perform descriptive representations, groupings, and summaries that can provide insight into the information contained in the data. Specifically, we seek to know:
+
+- Compare sales between regions. Observe relationships and models of influence between them.
+- See which genres are most popular in regions and have changed significantly over time.
+- The rise and fall of different platforms over the years.
+
+```{r}
+
+df <- read.csv('vgsales.csv')
+
+str(df)
+table (df$Year)
+
+#we convert the year variable into an ordinal variable (ordered factor variable)
+
+df$Year <- ordered(df$Year)
+
+class(df$Year)
+
+#Take years < 2017
+
+df <- df[df$Year<2017,]
+
+table (df$Year)
+
+head(df)
+str(df)
+summary(df)
+
+```
+
+# Correlation of global sales variables
+
+We analyze the sales variables, first we observe what proportion sales represent with respect to the global market:
+
+```{r}
+
+#We select sales variables from the dataset
+
+num_Sales <- df[,c("NA_Sales","EU_Sales","JP_Sales","Other_Sales","Global_Sales")]
+
+# calculate the number of sales per location and divide by the total sales
+# the #2 inside the apply meant to apply the sum to the columns of the selected subdataset
+
+apply(num_Sales,2,sum)/sum(df$Global_Sales)*100
+
+
+#Finally we calculate the correlation matrix of the sales variables.
+
+cor(num_Sales)
+
+```
+
+Global sales are seen to be strongly linked with NA > EU > JP > Other. The Japanese market is less dependent on the global market, this could point to different characteristics in preferences, publishers and types of games.
+
+# Difference in market preferences in Japan compared to other countries by date:
+
+```{r}
+
+library(dplyr)
+
+
+#We group the global sales generated by year and type of game, and we obtain the first position in each year of the game genre that has generated the most sales globally.
+#P.example: In 1980 the genre that generated the most sales was shooter with a sale of 7.07
+
+top_genre_year_global <- df %>% 
+         group_by(Year, Genre) %>% 
+         summarize(Revenue = sum(Global_Sales)) %>%
+         top_n(1)
+
+table(df$year)
+
+# Here we do it about Japan sales
+# if there is a tie, all the values come out, which is what happens until the year 1983 (there are no sales generated by any video game genre in Japan)
+
+top_genre_year_JP <- df %>% 
+         group_by(Year, Genre) %>% 
+         summarize(Revenue = sum(JP_Sales)) %>%
+         top_n(1)
+
+top_genre_year_global
+top_genre_year_JP
+
+
+```
+
+```{r}
+
+#We represent the values that we have seen before, top1 video game genre by year and sales in Japan and globally.
+
+library(ggplot2)
+
+#global
+ggplot(top_genre_year_global, aes(Year, Revenue, fill = Genre)) + 
+  geom_bar(stat = "identity") +
+  ggtitle("Top de géneros con más recaudación cada año en el mundo") +
+    theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.4),legend.position = "top")
+
+#Japan
+ggplot(top_genre_year_JP, aes(Year, Revenue, fill = Genre)) + 
+  geom_bar(stat = "identity") +
+  ggtitle("Top de géneros con más recaudación cada año en Japón") +
+    theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.4),legend.position = "top")
+
+```
+
+We observe that the preference in video game genre in Japan is for role-playing games while globally it is for action games. This is a differentiating qualitative characteristic of this market with respect to the global one.
+
+We group from 2008, which is the last change in the series, and do studies using graphs:
+
+```{r}
+
+# We have grouped every year, since 2008, by genre their sale in each of the markets.
+
+EU_gen <- df[df$Year>=2008,] %>% group_by(Genre) %>% 
+         summarize(Revenue = sum(EU_Sales))
+
+NA_gen <- df[df$Year>=2008,] %>% group_by(Genre) %>% 
+         summarize(Revenue = sum(NA_Sales))
+
+JP_gen <- df[df$Year>=2008,] %>% group_by(Genre) %>% 
+         summarize(Revenue = sum(JP_Sales))
+
+Global_gen <- df[df$Year>=2008,] %>% group_by(Genre) %>% 
+         summarize(Revenue = sum(Global_Sales))
+
+Other_gen <- df[df$Year>=2008,] %>% group_by(Genre) %>% 
+         summarize(Revenue = sum(Other_Sales))
+
+NA_gen
+EU_gen
+
+ggplot(EU_gen,aes(x=Genre,y=Revenue))+geom_bar(stat='identity')+ ggtitle("Género de juegos vendidos en UE")+ylab("En millones")+theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.4))
+
+#Action > Shooter
+
+ggplot(NA_gen,aes(x=Genre,y=Revenue))+geom_bar(stat='identity')+ ggtitle("Género de juegos vendidos en NA")+ylab("En millones")+theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.4))
+
+#Action > Shooter (higher sales than in the US, different scale of the graph)
+
+ggplot(JP_gen,aes(x=Genre,y=Revenue))+geom_bar(stat='identity')+ ggtitle("Género de juegos vendidos en Japón")+ylab("En millones")+theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.4))
+
+# Juegos de role > Action
+
+ggplot(Other_gen,aes(x=Genre,y=Revenue))+geom_bar(stat='identity')+ ggtitle("Género de juegos vendidos en el resto del mundo")+ylab("En millones")+theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.4))
+
+# Action > shooter
+
+```
+
+# Evolution of sales by region
+
+```{r}
+#videos$Year <- factor(videos$Year,levels=c(1980:2015))
+
+#We group each of the sales by year
+
+na <- df %>% select(Year,NA_Sales) %>% group_by(Year) %>% summarise(s=sum(NA_Sales))
+
+eu <- df %>% select(Year,EU_Sales) %>% group_by(Year) %>% summarise(s=sum(EU_Sales))
+
+jp <- df %>% select(Year,JP_Sales) %>%group_by(Year) %>% summarise(s=sum(JP_Sales))
+
+oth <- df %>% select(Year,Other_Sales) %>% group_by(Year) %>% summarise(s=sum(Other_Sales))
+
+class(oth)
+
+oth
+
+
+#We create a dataframe of the years from 1980 to 2016 with the sales of the regions grouped by years
+#Although we have tables that do not have all the years that we select here, when we mark the year column with that range, what it will do is generate that year in zero to maintain the structure of the same number of rows and columns.
+
+data_sales <- data.frame(year = c(1980:2016),oth$s,jp$s,eu$s,na$s)
+class(data_sales)
+
+data_sales
+
+
+#We obtain a graph with the evolution of sales throughout the years 1980 to 2016 in the different regions
+
+ggplot(data_sales, aes((year))) + 
+  geom_line(aes(y = na$s , colour = "NA_Sales"),size=1) + 
+  geom_line(aes(y = eu$s, colour = "EU_Sales"),size=1)+
+  geom_line(aes(y= jp$s ,colour='JP_Sales'),size=1)+
+  geom_line(aes(y=oth$s,colour='Other_Sales'),size=1)+ylab('Count in millions')+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 20))+
+  ggtitle("Evolution of sales over time") +
+    theme(axis.text.x = element_text(angle = 90, size = 10, vjust = 0.4),legend.position = "top")
+
+```
+
+A dominance in sales by NA is observed between 2000 and 2011. As of 2008 and coinciding with the global economic crisis, there is a sharp drop. However, NA is the one that is most affected since JP or the others markets have a slight drop to their previous behavior.
+
+Therefore, there are critical points in the evolution of sales in 1995, 2000 and 2008 (it could be investigated what reasons forced the changes in the previous non-commented dates).
+
+In turn, it is observed that the NA and EU series are strongly correlated. We already knew this from the correlation matrix.
+
+
+##Convert string variable to Date
+
+```{r}
+
+#setwd("where you what read files")
+
+user_activity <- read.csv("./user_activity.csv")
+
+user_activity <- read.csv("./user_activity.csv", stringsAsFactors = F)
+
+#convert string to date
+user_activity$registerStartDate <- as.Date(user_activity$registerStartDate, format="%Y/%m/%d")
+user_activity$registerFinalDate <- as.Date(user_activity$registerFinalDate, format="%Y/%m/%d")
+
+#convert string to date with times
+user_activity$sleepStartDate <- strptime(user_activity$sleepStartDate, format="%Y/%m/%d %H:%M:%S", tz = "UTC")
+user_activity$sleepStopDate <- strptime(user_activity$sleepStopDate, format="%Y/%m/%d %H:%M:%S", tz = "UTC")
+
+```
+
+
+## Categorize a numeric variable 
+
+```{r}
+
+#we are left with a simplified version
+activity <- user_activity[,c("userId","registerStartDate","steps","distance","calories")]
+
+# Histogram number of steps
+hist(activity$steps, main="Frecuencia de número de pasos")
+
+# up to 2000 steps is low
+# of 2000 - 4000 steps would be medium
+# of 4000 - 6000 steps would be high
+# > 6000 very high
+
+# Let's convert the numeric variable "steps" to categorical
+# for this we define the cutoff points
+breakPoints <- c(0, 2000, 4000, 6000, Inf)
+categories <- c("Low", "Medium", "High", "Very High")
+
+# and we cut the variable number of steps according to this categorization
+activity$steps.F <- cut(activity$steps, breaks = breakPoints, labels = categories)
+
+summary(activity$steps.F)
+
+```
+
+
+
+## Detection and treatment of outliers
+
+On the original steps variable, not the categorized variable, we are going to apply outlier detection and treatment.
+
+```{r}
+summary(activity$steps)
+```
+Let's notice that the mean (1687.3) and the median (878.5) are very distant and let's store the value of the first and third quartiles in two variables
+
+```{r}
+
+Q1 <- 353.0
+Q3 <- 1947.5
+
+# The interquantile range is defined as:
+
+IQR <-  Q3 - Q1
+
+# IQR is 1594.5 steps
+
+# let's calculate what the thresholds would be
+
+umbral_sup <- Q3 + (1.5 * IQR)  # 4339.25 steps
+umbral_inf <- Q1 - (1.5 * IQR)  # -2038.75
+
+# we remove the upper outliers (there are no lower ones)
+steps <- activity[activity$steps < 4339.25, c("steps")]
+
+summary(steps)
+
+
+```
+
+
+we look at the user 10039
+
+```{r}
+
+activity_10039 <- activity[activity$userId == 10039,]
+
+summary(activity_10039$steps)
+
+steps_10039 <- activity_10039$steps
+
+# Draw boxplot
+
+boxplot(steps_10039)
+
+# we keep the outliers in a variable
+
+outliers_10039 <- boxplot(steps_10039)$out
+
+```
+
+I see that user 10041 is the one with the most outliers, so I remove it
+
+```{r}
+
+activity <- activity[activity$userId != 10041,]
+
+boxplot(activity$steps ~ activity$userId)
+
+# this boxplot would be equivalent to the previous one
+boxplot(steps ~ userId, 
+        data = activity,
+        main = "Pasos por usuario")
+
+outliersReplace <- function(data, lowLimit, highLimit){
+  data[data<lowLimit] <- mean(data)
+  data[data>highLimit] <- median(data)
+  data
+}
+
+steps_10039_2 <- outliersReplace(steps_10039, 1045, 4884.5)
+
+summary(steps_10039)
+summary(steps_10039_2)
+
+```
+
+
+```{r}
+# you must execute the lines of code at the same time
+par(mfrow = c(1,2))
+boxplot(steps_10039, main = "No replacement of outliers")
+boxplot(steps_10039_2, main = "With replacement of outliers")
+
+```
+
+ We create a function where: 
+
+  - df is the dataFrame  (ej. activity)
+  - colNameData is date column (ej. "steps")
+  - colNameBy is the partition (ej. "userId")
+
+```{r}
+ 
+outliersReplace <- function(df, colNameData, colNameBy){
+  #we create a new column called the same as colNameData but with .R
+  colNameData.R <- paste(colNameData, "R", sep=".")
+  df[colNameData.R] <- df[colNameData]
+  
+  #we get the IDs by which to split the dataframe
+  IDs <- unique(df[,c(colNameBy)])
+  for (id in IDs){
+    data <- df[df[colNameBy] == id, c(colNameData) ]
+    
+    Q  <- quantile(data)
+    minimo <- Q[1]    # min value
+    Q1     <- Q[2]    # first quartile
+    Me     <- Q[3]    # median
+    Q3     <- Q[4]    # third quartile
+    maximo <- Q[5]    # max value
+    IQR <- Q3 - Q1
+    
+    lowLimit <- max(minimo, Q1 - 1.5*IQR)
+    highLimit <- min(maximo, Q3 + 1.5*IQR)
+    
+#All values where colNameBy is equal to id
+#colNameData is > Q3 + 1.5 * IQR. We replace it with median
+    df[df[colNameBy] == id & df[colNameData] > highLimit, c(colNameData.R)] <- Me
+    
+    # the same for the lower threshold
+    df[df[colNameBy] == id & df[colNameData]  < lowLimit, c(colNameData.R)] <- Me
+    
+    cat(paste("El", colNameBy, id, "median(", colNameData, ") ==", Me, "\n", sep=" " ))
+    
+  }
+  df
+}
+activity <- outliersReplace(activity,"steps","userId")
+
+par(mfrow = c(2,1))
+boxplot(steps   ~ userId, data = activity, main = "No replacement")
+boxplot(steps.R ~ userId, data = activity, main = "With replacement")
+
+```
+

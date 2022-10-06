@@ -1,0 +1,177 @@
+---
+title: "Activity 2 solution"
+output:
+  html_notebook: default
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r}
+
+# install.packages("titanic")
+library(titanic)
+data("titanic_train")
+df <- titanic_train
+head(df)
+str(df)
+
+
+table(df$Ticket)
+```
+
+
+```{r}
+
+summary(df)
+```
+- Change variables that are factors into factors. If they are ordinal, use *ordered* to create ordered factors. Remember to use lapply.
+
+```{r}
+
+df[c("Pclass","SibSp","Parch")] <- lapply(df[c("Pclass","SibSp","Parch")],ordered)
+
+df[c("Sex","Cabin","Embarked","Survived")] <- lapply(df[c("Sex","Cabin","Embarked","Survived")],factor)
+
+
+summary(df)
+str(df)
+```
+
+- It represents in a qplot the age against the fare, and in a second qplot the same but with the key of the class in which they were traveling. Represent it in turn by factoring it (i.e. applying faceting) by *Sex* and *Embarked*
+
+
+
+```{r}
+
+library(ggplot2)
+
+qplot(Age, Fare, data=df)
+
+#with different classes
+
+qplot(Age, Fare, data=df, colour=Pclass)
+
+```
+
+```{r}
+
+#We represent Age against Rate in a scatterplot differentiating the classes in which they travel and also:
+# we factor it (i.e. we apply faceting) by sex and city where it embarked
+
+qplot(Age, Fare, data=df, colour=Pclass, facets=~Sex+Embarked)
+
+
+# The following representation facilitates its interpretation
+qplot(Age, Fare, data=df, colour=Pclass, facets=Sex~Embarked)
+
+
+```
+
+
+
+Additionally, different ways of visualizing the relationship between the age of the passenger and the fare paid for the ticket are shown.
+
+
+```{r}
+ggplot(df, aes(x=Age, y=Fare)) + geom_point() # scatterplot
+ggplot(df, aes(x=Age, y=Fare)) + geom_hex() # hexagon plot that helps to see the density of observations
+ggplot(df, aes(x=Age, y=Fare)) + geom_smooth() # poses a regression curve between both variables
+ggplot(df, aes(x=Age, y=Fare)) + geom_line() # connect the observations according to the order of the x-axis variable, do you find any useful interpretation of this graph?
+ggplot(df, aes(x=Age, y=Fare)) + geom_density2d() # draws the level lines of a function in two dimensions where the value is the count of observations (a discrete surface in 3 dimensions)
+
+```
+
+- Paint a boxplot of the age grouped according to Sex
+
+```{r}
+ggplot(df, aes(Sex, Age)) + geom_boxplot()
+```
+
+- Draw a barplot representing survival in each *Pclass* by coloring the bars accordingly.
+
+```{r}
+ggplot(df, aes(Pclass, fill=Survived))+geom_bar()
+ggplot(df, aes(Pclass, fill=Sex))+geom_bar() # additionally, a barplot of men/women is generated according to class
+```
+
+- Paint survival based on the *Sex* category, what do you see?
+
+```{r}
+
+ggplot(df, aes(Sex,Survived))+geom_bar(stat = "identity")
+
+```
+
+Here you can see the different percentages. This graph shows that more men died
+
+```{r}
+
+
+qplot(Survived,data=df,facets= ~ Sex)
+
+```
+
+ When taking advantage of faceting and factoring by the gender variable, it is observed that men survive much less than women
+
+- Paint survival based on the *Pclass* category, what do you appreciate?
+
+```{r}
+
+qplot(Survived,data=df,facets= ~ Pclass)
+
+```
+
+Survival is higher in class 1 and dramatically lower in class 3
+
+- Create a histogram of *Age*, what do you see?.Categorizes the age variable and put a new name *Age_c". 
+Do you find any outlier in Age? Treat it if you see it necessary. 
+
+
+
+```{r}
+
+
+qplot(Age,data= df)+geom_histogram(bins = 50,na.rm = T)
+
+```
+It is observed that the majority of travelers had a middle age between 20 and 40 years.Let's categorize the variable.
+For example, We will divide into the following categories ( we can use other with discretion):
+
+- children 0 - 16 years
+- youths 16 - 25 years
+- adult 25 - 55 years
+- old > 55 years
+
+
+```{r}
+
+breakPoints <- c(0, 16, 25, 55, Inf)
+categories <- c("Children", "Youths", "Adult", "Old")
+
+df$age_c <- cut(df$Age, breaks = breakPoints, labels = categories)
+
+summary(df$age_c)
+
+```
+```{r}
+
+summary(df$Age)
+
+```
+There are no outliers but there are missing values.What do you want to do?
+
+
+- Create a pool of the data using `dplyr` of *Sex* and *Pclass*. Make summaries of mean, count and median. What could you say about the results? Is there enough sample to draw conclusions in all the categories created by combining age and class?
+
+```{r}
+library(dplyr)
+df$DummySurvived <- as.numeric(df$Survived) -1
+columnas <- c("Sex", "Pclass")
+df %>%
+    group_by(across(columnas)) %>%
+    summarise(Media = mean(DummySurvived), Mediana=median(DummySurvived),  Conteo=n() )
+```
+Third-class men had a pretty hard time surviving, however first-class and second-class women had a very high survival propensity. There is quite a sample of each subcategory, with the third class cases abounding more.
+
+
