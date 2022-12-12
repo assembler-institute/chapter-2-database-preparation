@@ -11,6 +11,7 @@ Load the dataset **titanic**
 
 ```{r}
 # install.packages("titanic")
+# library("titanic")
 # data("titanic_train")
 # df <- titanic_train
 # head(df)
